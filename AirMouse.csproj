@@ -56,10 +56,11 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>71FA37F684DFCFAB43458353CDF87562440E3350</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>5C36AB81F644BA3DD60C52F6534CA2A755405202</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>AirMouse_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>
+    </ManifestKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -114,7 +115,6 @@
     <EmbeddedResource Include="Updates\MessageForm.resx">
       <DependentUpon>MessageForm.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="AirMouse_TemporaryKey.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

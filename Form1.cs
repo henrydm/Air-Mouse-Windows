@@ -53,8 +53,7 @@ namespace AirMouse
 
         private float _x, _y;
         string _decimalSeparator;
-        private UdpClient _socket;
-        private int _port = 6000;
+        private int _port = 6000, _inactivityTime = 10000;
         private const float MIN_MOV = 0.035f;
         private BackgroundWorker _bw;
         bool _on = true;
@@ -70,9 +69,9 @@ namespace AirMouse
 
         Rectangle rectangleCloseButton;
         Rectangle rectangleMinimizeButton;
-        bool _overMinimize;
-        bool _overClose;
-        bool _silent;
+
+        bool _overMinimize, _overClose, _silent;
+
         private const String IdleText = "Waiting for connections";
         private const String ConnectedText = "Connected";
 
@@ -169,8 +168,7 @@ namespace AirMouse
             _bw.WorkerReportsProgress = true;
             _bw.WorkerSupportsCancellation = true;
 
-            _bw.DoWork += ReceiveDataLoop;
-            _bw.RunWorkerCompleted += ReceiveDataLoopFinish;
+            _bw.DoWork += _bw_DoWork;
 
             // Create a simple tray menu with only one item.
             _trayMenu = new ContextMenu();
@@ -191,6 +189,8 @@ namespace AirMouse
             SetInfoText();
 
         }
+
+
 
         #region Form Events
         private void Form1_Load(object sender, EventArgs e)
@@ -236,13 +236,6 @@ namespace AirMouse
         {
             _trayIcon.Visible = false;
             _trayIcon.Dispose();
-
-            if (_socket != null)
-            {
-
-                //_socket.Close();
-                //_socket.Dispose(true);
-            }
         }
         private void Form1_MouseDown(object sender, MouseEventArgs e)
         {
@@ -400,48 +393,88 @@ namespace AirMouse
         #endregion
 
         #region Compute data
-        void ReceiveDataLoop(object sender, DoWorkEventArgs e)
+        void _bw_DoWork(object sender, DoWorkEventArgs e)
         {
-
-            _socket = new UdpClient(_port);
-            IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, _port);
-
             while (_on)
             {
 
-                var bytes = _socket.Receive(ref groupEP);
-                var data = Encoding.UTF8.GetString(bytes);
+
+                ReceiveDataLoop();
 
 
-                var msgType = ComputeReceivedData(data);
+            }
 
-                if (msgType == MessageType.Hello)
+        }
+
+        void ReceiveDataLoop()
+        {
+            IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, _port);
+            UdpClient udpClient = null;
+            byte[] bytes;
+            string inputData;
+            MessageType msgType;
+
+            while (_on)
+            {
+                //Listen for incomming connections
+                if (udpClient == null)
                 {
-                    var answer = Encoding.ASCII.GetBytes("que ase");
+                    var listener = TcpListener.Create(_port);
+                    listener.Start();
 
-                    _socket.Send(answer, answer.Length, groupEP);
-                    SetConnectionInfoToUI(data);
+                    var tcpClient = listener.AcceptTcpClient();
+                    bytes = new byte[tcpClient.ReceiveBufferSize];
 
+                    var stream = tcpClient.GetStream();
+                    stream.Read(bytes, 0, tcpClient.ReceiveBufferSize);
+
+                    inputData = Encoding.UTF8.GetString(bytes);
+
+                    msgType = ComputeReceivedData(inputData);
+
+                    if (msgType == MessageType.Hello)
+                    {
+                        udpClient = new UdpClient(_port, tcpClient.Client.AddressFamily);
+
+                        var answer = Encoding.ASCII.GetBytes("que ase");
+                        stream.Write(answer, 0, answer.Length);
+
+                        stream.Close();
+                        stream.Dispose();
+                        tcpClient.Close();
+                        SetConnectionInfoToUI(inputData);
+
+                    }
                 }
 
-                if (msgType == MessageType.Bye)
+                //Connection Loop
+               // udpClient.Client.ReceiveTimeout = _inactivityTime;
+                try
                 {
-                    SetDisconnectedInfoToUI();
-                    _socket.Close();
+                    bytes = udpClient.Receive(ref groupEP);
+                    inputData = Encoding.UTF8.GetString(bytes);
 
-                    _socket = new UdpClient(_port);
-                    groupEP = new IPEndPoint(IPAddress.Any, _port);
+                    msgType = ComputeReceivedData(inputData);
+                    if (msgType == MessageType.Bye)
+                    {
+                        SetDisconnectedInfoToUI();
+                        udpClient.Close();
+                        udpClient = null;
+                    }
+                }
+
+                //On time out
+                catch (SocketException)
+                {
+                    if (udpClient != null)
+                        udpClient.Close();
+
+                    udpClient = null;
                 }
 
             }
         }
-        void ReceiveDataLoopFinish(object sender, RunWorkerCompletedEventArgs e)
-        {
 
-            //_socket.Disconnect(false);
-            //_socket.Close();
-            //_socket.Dispose();
-        }
         private MessageType ComputeReceivedData(string receivedData)
         {
 
@@ -608,13 +641,13 @@ namespace AirMouse
                     }
                     else
                     {
-                        e.Result = false; 
+                        e.Result = false;
                     }
                 }
-                catch 
+                catch
                 {
-                    e.Result = false; 
-                } 
+                    e.Result = false;
+                }
             };
             bw.RunWorkerCompleted += (o, e) =>
             {
@@ -644,7 +677,7 @@ namespace AirMouse
                 {
                     DownloadNewVersion();
                 }
-               
+
             }
         }
         private void DownloadNewVersion()
@@ -653,7 +686,7 @@ namespace AirMouse
             {
                 File.Delete(NetUtils.DownloadedTargetTempPath);
             }
-            
+
             var downloadForm = new DownloadForm("Download Update");
             downloadForm.OnCancel += (o, e) =>
             {
@@ -666,7 +699,7 @@ namespace AirMouse
             };
             NetUtils.OnError += (o, e) =>
             {
-                
+
             };
             NetUtils.OnDownloadCompleted += (o, e) =>
             {
@@ -676,7 +709,7 @@ namespace AirMouse
             };
             downloadForm.Show(this);
             NetUtils.DownloadLatestVersion();
-            
+
         }
 
         private void ApplyUpdate()
@@ -695,7 +728,7 @@ namespace AirMouse
             w.WriteLine("ren " + "\"" + appTargetPathWithTempName + "\" " + "\"" + appTargetName + "\"");
             w.WriteLine("del " + "\"" + NetUtils.DownloadedTargetTempPath + "\"");
             w.WriteLine("start " + "\"" + appTargetFolder + "\" " + "\"" + appTargetName + "\"");
-           
+
             w.Close();
             w.Dispose();
 
