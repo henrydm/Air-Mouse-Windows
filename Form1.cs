@@ -434,7 +434,7 @@ namespace AirMouse
 
                     if (msgType == MessageType.Hello)
                     {
-                        udpClient = new UdpClient(_port, tcpClient.Client.AddressFamily);
+                        udpClient = new UdpClient(_port);
 
                         var answer = Encoding.ASCII.GetBytes("que ase");
                         stream.Write(answer, 0, answer.Length);
@@ -442,9 +442,11 @@ namespace AirMouse
                         stream.Close();
                         stream.Dispose();
                         tcpClient.Close();
-                        SetConnectionInfoToUI(inputData);
+                        listener.Stop();
 
+                        SetConnectionInfoToUI(inputData);
                     }
+                   
                 }
 
                 //Connection Loop
@@ -551,19 +553,19 @@ namespace AirMouse
                 else if (splitedDataX == "down")
                 {
                     if (splitedDataY == "left")
-                        MouseLeftDown();
+                        MousePrimaryDown();
 
                     else if (splitedDataY == "right")
-                        MouseRightDown();
+                        MouseSecondaryDown();
                 }
 
                 else if (splitedDataX == "up")
                 {
                     if (splitedDataY == "left")
-                        MouseLeftUp();
+                        MousePrimaryUp();
 
                     else if (splitedDataY == "right")
-                        MouseRightUp();
+                        MouseSecondaryUp();
                 }
 
                 else if (splitedDataX == "wheel")
@@ -587,7 +589,7 @@ namespace AirMouse
                 {
                     splitedDataX = splitedDataX.Replace(".", _decimalSeparator);
                     splitedDataY = splitedDataY.Replace(".", _decimalSeparator);
-                    double splitedDataXF, splitedDataZF;
+                    double splitedDataXF, splitedDataYF;
                     var currentX = Cursor.Position.X;
                     var currentY = Cursor.Position.Y;
                     int incX = 0;
@@ -598,17 +600,17 @@ namespace AirMouse
                     {
                         if (Math.Abs(splitedDataXF) > MIN_MOV)
                         {
-                            incY = (int)(splitedDataXF);
-                            currentY -= incY;
+                            incX = (int)(splitedDataXF);
+                            currentX += incX;
                         }
                     }
 
-                    if (double.TryParse(splitedDataY, out splitedDataZF))
+                    if (double.TryParse(splitedDataY, out splitedDataYF))
                     {
-                        if (Math.Abs(splitedDataZF) > MIN_MOV)
+                        if (Math.Abs(splitedDataYF) > MIN_MOV)
                         {
-                            incX = (int)(splitedDataZF);
-                            currentX -= incX;
+                            incY = (int)(splitedDataYF);
+                            currentY += incY;
                         }
                     }
 
@@ -1082,22 +1084,22 @@ namespace AirMouse
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
 
-        private void MouseLeftDown()
+        private void MousePrimaryDown()
         {
-            mouse_event(LEFTDOWN, Cursor.Position.X, Cursor.Position.Y, 0, 0);
+            mouse_event(SystemInformation.MouseButtonsSwapped ? RIGHTDOWN : LEFTDOWN, Cursor.Position.X, Cursor.Position.Y, 0, 0);
         }
-        private void MouseLeftUp()
+        private void MousePrimaryUp()
         {
-            mouse_event(LEFTUP, Cursor.Position.X, Cursor.Position.Y, 0, 0);
+            mouse_event(SystemInformation.MouseButtonsSwapped ? RIGHTUP : LEFTUP, Cursor.Position.X, Cursor.Position.Y, 0, 0);
         }
 
-        private void MouseRightDown()
+        private void MouseSecondaryDown()
         {
-            mouse_event(RIGHTDOWN, Cursor.Position.X, Cursor.Position.Y, 0, 0);
+            mouse_event(SystemInformation.MouseButtonsSwapped ? LEFTDOWN : RIGHTDOWN, Cursor.Position.X, Cursor.Position.Y, 0, 0);
         }
-        private void MouseRightUp()
+        private void MouseSecondaryUp()
         {
-            mouse_event(RIGHTUP, Cursor.Position.X, Cursor.Position.Y, 0, 0);
+            mouse_event(SystemInformation.MouseButtonsSwapped ? LEFTUP : RIGHTUP, Cursor.Position.X, Cursor.Position.Y, 0, 0);
         }
 
         private void MousewheelDown()
