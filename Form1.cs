@@ -133,7 +133,7 @@ namespace AirMouse
             InfoText += "This is a RC1 (Release Candidate) version, I fixed a lot of bugs from the beta version, but if you found any bug or you have any suggestion, plase feel free to write me at enricdelmolino@gmail.com" + System.Environment.NewLine;
             InfoText += System.Environment.NewLine;
             InfoText += System.Environment.NewLine;
-            InfoText += "This program was made with all my love, I hope it be usefull for you, and you enjoy it." + System.Environment.NewLine;
+            InfoText += "This program was made with all my love, I hope it be useful for you, and you enjoy it." + System.Environment.NewLine;
             InfoText += System.Environment.NewLine;
             InfoText += System.Environment.NewLine;
             InfoText += "Enric.";
