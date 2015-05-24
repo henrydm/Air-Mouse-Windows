@@ -527,6 +527,7 @@ namespace AirMouse
                     splitedDataY = splitedDataY.Replace(")", "{)}");
 
                     SendKeys.SendWait(splitedDataY);
+                    
                 }
 
                 else if (splitedDataX == "hola")
@@ -583,6 +584,14 @@ namespace AirMouse
                         {
                             MousewheelScroll(Convert.ToInt32(delta));
                         }
+                    }
+                }
+                else if (splitedDataX == "zoom")
+                {
+                    float delta;
+                    if (float.TryParse(splitedDataY, out delta))
+                    {
+                        MousewheelZoom(Convert.ToInt32(delta));
                     }
                 }
                 else
@@ -1081,8 +1090,15 @@ namespace AirMouse
         private const int WHEEL_DOWN = 0x20;
         private const int WHEEL_UP = 0x40;
         private const int WHEEL_SCROLL = 0x800;
+        private const int KEY_DOWN_EVENT = 0x01; 
+        private const int KEY_UP_EVENT = 0x02; 
+        private const int KEY_CTRL = 0xA2;
+        
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        static extern void keybd_event(byte bVk, byte bScan, int dwFlags, int dwExtraInfo);
 
         private void MousePrimaryDown()
         {
@@ -1119,6 +1135,12 @@ namespace AirMouse
         private void MousewheelScroll(int scrollValue)
         {
             mouse_event(WHEEL_SCROLL, Cursor.Position.X, Cursor.Position.Y, scrollValue, 0);
+        }
+        private void MousewheelZoom(int scrollValue)
+        {
+            keybd_event(KEY_CTRL, 0x45, KEY_DOWN_EVENT | 0, 0);
+            mouse_event(WHEEL_SCROLL, Cursor.Position.X, Cursor.Position.Y, scrollValue, 0);
+            keybd_event(KEY_CTRL, 0x45, KEY_DOWN_EVENT | KEY_UP_EVENT, 0);        
         }
         #endregion
 
