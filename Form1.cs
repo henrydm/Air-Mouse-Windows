@@ -17,7 +17,7 @@
 *																							*
 *   You should have received a copy of the GNU General Public License						*
 *   along with Air Mouse Server for Windows.  If not, see <http://www.gnu.org/licenses/>.	*
-*********************************************************************************************/
+********************************************************************************************/
 
 using AirMouse.Updates;
 using Microsoft.Win32;
